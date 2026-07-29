@@ -1,188 +1,100 @@
-      <div class="review-q-num">문제 ${q.id}</div>
-      <div class="review-q-text">${escHtml(q.text)}</div>`;
-
-    if (q.type === 'choice') {
-      q.options.forEach((opt, i) => {
-        const isCorrect = String(i) === String(q.answer);
-        const isUser = String(userAns) === String(i);
-        let style = '';
-        if (isCorrect) style = 'border-color:var(--ok);background:var(--ok-bg);color:var(--ok)';
-        else if (isUser) style = 'border-color:var(--ng);background:var(--ng-bg);color:var(--ng)';
-        html += `<button class="option-btn" style="${style};cursor:default;margin-bottom:6px" disabled>
-          <span class="option-label">${LABELS[i]}</span>
-          <span>${escHtml(opt)}</span>
-          ${isCorrect ? ' ✅' : ''}${isUser && !isCorrect ? ' ← 내 답' : ''}
-        </button>`;
-      });
-    } else {
-      html += `<div class="review-answer-row">
-        <span class="review-answer-chip my">내 답: ${escHtml(userAns || '(미답)')}</span>
-        <span class="review-answer-chip correct">정답: ${escHtml(formatAnswer(q))}</span>
-      </div>`;
-    }
-
-    if (q.explanation) {
-      html += `<div class="explanation-box"><div class="explanation-label">해설</div>${escHtml(q.explanation)}</div>`;
-    }
-    html += '</div>';
-  });
-
-  document.getElementById('reviewContent').innerHTML = html;
-  showScreen('review');
+<!DOCTYPE html>
+<html lang="ko" data-theme="">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>이든X학원 평가 시스템</title>
+<style>
+:root {
+  --brand:#3B5BDB; --brand-l:#4C6EF5; --brand-d:#2F4AC5;
+  --acc:#E03131; --acc-l:#F03E3E;
+  --ok:#2F9E44; --ok-bg:#EBFBEE; --ok-bd:#8CE99A;
+  --ng:#C92A2A; --ng-bg:#FFF5F5; --ng-bd:#FFA8A8;
+  --warn:#E67700;
+  --bg:#EEF2FF; --bg2:#F8FAFF;
+  --card:#FFFFFF; --q-bg:#F0F4FF;
+  --tx:#0F172A; --tx2:#334155; --tx3:#64748B;
+  --bd:#CBD5E1; --bd2:#E2E8F0;
+  --sh:0 2px 8px rgba(59,91,219,.08),0 1px 3px rgba(0,0,0,.04);
+  --sh-lg:0 8px 24px rgba(59,91,219,.13),0 2px 8px rgba(0,0,0,.06);
+  --r:14px; --rsm:9px;
 }
-
-function retryWrong() {
-  if (!S.wrongQuestions.length) return;
-  const qs = [...S.wrongQuestions];
-  S.questions = qs;
-  document.getElementById('studentName').value = S.studentName;
-  startQuiz(qs);
+@media(prefers-color-scheme:dark){:root{
+  --bg:#0D1339;--bg2:#111B44;--card:#1A2456;--q-bg:#1E2E6E;
+  --tx:#F1F5F9;--tx2:#CBD5E1;--tx3:#94A3B8;
+  --bd:#2D3F7A;--bd2:#253368;
+  --sh:0 2px 8px rgba(0,0,0,.35);--sh-lg:0 8px 24px rgba(0,0,0,.45);
+}}
+:root[data-theme=dark]{
+  --bg:#0D1339;--bg2:#111B44;--card:#1A2456;--q-bg:#1E2E6E;
+  --tx:#F1F5F9;--tx2:#CBD5E1;--tx3:#94A3B8;
+  --bd:#2D3F7A;--bd2:#253368;
+  --sh:0 2px 8px rgba(0,0,0,.35);--sh-lg:0 8px 24px rgba(0,0,0,.45);
 }
-
-// ══════════════════════════════════════
-// HISTORY
-// ══════════════════════════════════════
-function saveHistory(res) {
-  const entry = {
-    id: Date.now(),
-    date: new Date().toLocaleDateString('ko-KR'),
-    title: S.title,
-    subject: S.subject,
-    score: Math.round(res.correct / res.total * 100),
-    correct: res.correct,
-    total: res.total,
-    elapsed: res.elapsed,
-    studentName: S.studentName,
-  };
-  S.history.unshift(entry);
-  if (S.history.length > 20) S.history.pop();
-  localStorage.setItem('edenQuizHistory', JSON.stringify(S.history));
+:root[data-theme=light]{
+  --bg:#EEF2FF;--bg2:#F8FAFF;--card:#fff;--q-bg:#F0F4FF;
+  --tx:#0F172A;--tx2:#334155;--tx3:#64748B;
+  --bd:#CBD5E1;--bd2:#E2E8F0;
+  --sh:0 2px 8px rgba(59,91,219,.08),0 1px 3px rgba(0,0,0,.04);
+  --sh-lg:0 8px 24px rgba(59,91,219,.13);
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);color:var(--tx);font-size:16px;line-height:1.6;min-height:100vh;
+  -webkit-tap-highlight-color:transparent}
+button{font-family:inherit}
+.hidden{display:none!important}
 
-function renderHistory() {
-  const list = document.getElementById('historyList');
-  const empty = document.getElementById('historyEmpty');
-  if (!S.history.length) {
-    list.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-  empty.classList.add('hidden');
-  list.innerHTML = S.history.map(h => {
-    const color = h.score >= 80 ? 'var(--ok)' : h.score >= 60 ? 'var(--warning)' : 'var(--ng)';
-    return `<div class="history-item">
-      <div class="history-score" style="color:${color}">${h.score}<small>점</small></div>
-      <div class="history-info">
-        <div class="history-title">${escHtml(h.title)}${h.studentName ? ' — ' + escHtml(h.studentName) : ''}</div>
-        <div class="history-meta">${h.date} · ${SUBJECT_LABELS[h.subject]||'기타'} · ${h.correct}/${h.total}문제</div>
-      </div>
-    </div>`;
-  }).join('');
+/* ── APP BAR ── */
+.app-bar{
+  background:var(--brand);color:#fff;height:58px;padding:0 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:300;
+  box-shadow:0 2px 12px rgba(59,91,219,.4);
 }
+.brand{font-size:20px;font-weight:900;letter-spacing:-.5px}
+.brand-x{color:var(--acc)}
+.bar-r{display:flex;align-items:center;gap:8px}
+.subj-chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.3px}
+.chip-kor{background:#C92A2A;color:#fff}
+.chip-math{background:#1971C2;color:#fff}
+.chip-eng{background:#2F9E44;color:#fff}
+.chip-other{background:rgba(255,255,255,.2);color:#fff}
+.bar-btn{width:34px;height:34px;border-radius:50%;border:none;
+  background:rgba(255,255,255,.13);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  transition:background .15s}
+.bar-btn:hover{background:rgba(255,255,255,.24)}
+.prog-wrap{height:3px;background:var(--brand);position:sticky;top:58px;z-index:299}
+.prog-fill{height:3px;background:#74C0FC;transition:width .4s cubic-bezier(.4,0,.2,1)}
 
-function clearHistory() {
-  if (!confirm('학습 이력을 모두 삭제할까요?')) return;
-  S.history = [];
-  localStorage.removeItem('edenQuizHistory');
-  renderHistory();
+/* ── SCREENS ── */
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── UPLOAD ── */
+.up-page{max-width:620px;margin:0 auto;padding:24px 16px 100px}
+.hero{
+  background:linear-gradient(140deg,var(--brand) 0%,#364FC7 100%);
+  border-radius:var(--r);padding:28px 24px 30px;color:#fff;
+  margin-bottom:16px;position:relative;overflow:hidden;
 }
+.hero::after{content:'X';position:absolute;right:-6px;top:-16px;
+  font-size:130px;font-weight:900;color:rgba(255,255,255,.05);line-height:1;pointer-events:none}
+.hero-tag{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin-bottom:8px}
+.hero-h{font-size:26px;font-weight:900;line-height:1.2;margin-bottom:6px}
+.hero-sub{font-size:14px;opacity:.8}
 
-// ══════════════════════════════════════
-// SAMPLE DOWNLOAD
-// ══════════════════════════════════════
-function downloadSample(type) {
-  let content, filename, mime;
-
-  if (type === 'csv') {
-    content = `번호,문제,①,②,③,④,⑤,정답,해설
-1,대한민국의 수도는?,서울,부산,대구,인천,광주,1,서울은 조선시대부터 대한민국의 수도입니다
-2,1 + 1 = ?,1,2,3,4,5,2,기본 덧셈입니다
-3,What is the capital of France?,London,Berlin,Paris,Rome,Madrid,3,Paris is the capital of France
-4,물의 화학식은?,H2O,CO2,NaCl,O2,N2,1,수소 2개 산소 1개로 이루어진 화합물
-5,한국의 국화는?,장미,무궁화,벚꽃,진달래,국화,2,무궁화는 대한민국의 국화입니다
-번호,문제,정답,해설
-6,지구는 태양 주위를 공전한다,O,지구는 태양계 행성으로 공전합니다
-7,물은 100도씨에서 얼어붙는다,X,물은 0도씨에서 얼고 100도씨에서 끓습니다`;
-    filename = '이든X학원_문제양식.csv';
-    mime = 'text/csv;charset=utf-8';
-  } else if (type === 'txt') {
-    content = `1. 대한민국의 수도는?
-① 서울
-② 부산
-③ 대구
-④ 인천
-정답: 1
-해설: 서울은 조선시대부터 대한민국의 수도입니다
-
-2. 물의 화학식은?
-① H2O
-② CO2
-③ NaCl
-④ O2
-정답: 1
-해설: 수소 2개 산소 1개로 이루어진 화합물입니다
-
-3. 지구는 태양 주위를 공전한다
-정답: O
-해설: 지구는 태양계 행성으로 태양을 공전합니다
-
-4. 대한민국 최초의 국왕은?
-정답: 이성계
-해설: 이성계는 조선을 건국한 태조입니다`;
-    filename = '이든X학원_문제양식.txt';
-    mime = 'text/plain;charset=utf-8';
-  } else {
-    // Excel guide as CSV (user can open in Excel)
-    content = `번호,유형,문제,①,②,③,④,⑤,정답,해설
-1,객관식,지구의 자연위성은?,달,화성,목성,금성,토성,1,달은 지구의 유일한 자연위성입니다
-2,객관식,이산화탄소의 화학식은?,CO,CO2,H2O,NaCl,O2,2,탄소 1개 산소 2개
-3,OX,지구는 태양 주위를 공전한다,,,,,,O,지구는 태양계 행성
-4,주관식,대한민국의 수도는?,,,,,,서울,조선시대부터 수도`;
-    filename = '이든X학원_Excel양식.csv';
-    mime = 'text/csv;charset=utf-8';
-  }
-
-  const bom = '﻿';
-  const blob = new Blob([bom + content], { type: mime });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
+.drop-zone{
+  background:var(--card);border:2.5px dashed var(--bd);border-radius:var(--r);
+  padding:36px 20px;text-align:center;cursor:pointer;margin-bottom:12px;
+  transition:border-color .2s,background .2s,box-shadow .2s;
 }
-
-// ══════════════════════════════════════
-// PRINT
-// ══════════════════════════════════════
-function printPage() {
-  document.getElementById('printName').textContent = S.studentName || '';
-  document.getElementById('printDate').textContent = new Date().toLocaleDateString('ko-KR');
-  window.print();
+.drop-zone:hover,.drop-zone.drag-over{
+  border-color:var(--brand-l);background:var(--bg2);
+  box-shadow:0 0 0 4px rgba(59,91,219,.08);
 }
-
-// ══════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════
-function escHtml(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) { return escHtml(s); }
-
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// ══════════════════════════════════════
-// INIT
-// ══════════════════════════════════════
-renderHistory();
-
-// Theme observer for data-theme stamp
-const observer = new MutationObserver(() => {
-  // handled inline
-});
-</script>
+.drop-icon{font-size:42px;margin-bottom:10px}
+.drop-h{font-size:16px;font-weight:700;margin-bottom:5px}
+.drop-s{font-size:13px;color:var(--tx3)}
