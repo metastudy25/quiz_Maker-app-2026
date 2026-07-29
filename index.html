@@ -627,44 +627,75 @@ function setPendingFile(f) {
 function doUpload() {
   if (!pendingFile) return;
   const ext = (pendingFile.name.split('.').pop()||'').toLowerCase();
-  const reader = new FileReader();
 
   if (ext === 'xlsx' || ext === 'xls') {
+    /* ── Excel: ArrayBuffer로 읽어 SheetJS 처리 ── */
+    const reader = new FileReader();
     reader.onload = e => {
       try {
-        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
-        processRows(rows);
-      } catch(err) { showToast('❌ 엑셀 파일 읽기 오류: ' + err.message, 'err'); }
+        // header:1 → 2차원 배열로 먼저 받아 헤더 디버그 후 json 변환
+        const raw = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+        showDebugHeaders(raw);
+        processRows(raw);
+      } catch(err) {
+        showToast('❌ 엑셀 오류: ' + err.message, 'err');
+      }
     };
     reader.onerror = () => showToast('❌ 파일 읽기 실패', 'err');
     reader.readAsArrayBuffer(pendingFile);
+
   } else {
-    // CSV / TXT — 인코딩 자동 감지
+    /* ── CSV / TXT: 바이너리로 읽어 인코딩 자동 감지 ── */
+    const reader = new FileReader();
     reader.onload = e => {
+      const buffer = e.target.result;
+      const uint8  = new Uint8Array(buffer);
+
+      // UTF-8 BOM 감지
+      const hasBOM = uint8[0]===0xEF && uint8[1]===0xBB && uint8[2]===0xBF;
+
+      // 한글 EUC-KR 특징: 0x80~0xFE 범위 바이트가 많고 0x81~0x9F 범위는 없음
+      // → TextDecoder로 두 인코딩 모두 시도, 깨짐 없는 쪽 선택
+      let text = '';
       try {
-        let text = e.target.result;
-        // BOM 제거
-        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        const decoded = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+        text = decoded;
+      } catch(e) {
+        // UTF-8 실패 → EUC-KR
+        try {
+          text = new TextDecoder('euc-kr').decode(buffer);
+        } catch(e2) {
+          text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
+        }
+      }
+
+      // BOM 제거
+      if (hasBOM || text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+
+      try {
         const rows = parseCSV(text);
+        showDebugHeaders(rows);
         processRows(rows);
-      } catch(err) { showToast('❌ 파일 파싱 오류: ' + err.message, 'err'); }
+      } catch(err) {
+        showToast('❌ 파싱 오류: ' + err.message, 'err');
+      }
     };
-    reader.onerror = () => {
-      // UTF-8 실패 시 EUC-KR 재시도
-      const r2 = new FileReader();
-      r2.onload = e2 => {
-        let text = e2.target.result;
-        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-        const rows = parseCSV(text);
-        processRows(rows);
-      };
-      r2.readAsText(pendingFile, 'EUC-KR');
-    };
-    // 먼저 UTF-8 시도
-    reader.readAsText(pendingFile, 'UTF-8');
+    reader.onerror = () => showToast('❌ 파일 읽기 실패', 'err');
+    reader.readAsArrayBuffer(pendingFile);   // ← 항상 ArrayBuffer로 읽어 인코딩 직접 제어
   }
+}
+
+/* 헤더 목록을 토스트로 보여줌 (디버그용) */
+function showDebugHeaders(rows) {
+  if (!rows || rows.length === 0) return;
+  const keys = Object.keys(rows[0]).slice(0, 8);
+  // 미리보기 영역에 표시
+  const nd = document.getElementById('file-name-display');
+  nd.innerHTML = '📋 인식된 열: <strong>' + keys.map(k=>esc(k)).join(' / ') + '</strong><br>'
+    + '<span style="font-size:12px;opacity:.7">' + rows.length + '행 읽음</span>';
+  nd.style.display = 'block';
 }
 
 /* ============================================================
@@ -731,16 +762,43 @@ function classifySubject(t) {
   return '기타';
 }
 
+/* ── 열 이름 정규화: 공백·특수문자 제거 + 소문자 ── */
+function normalizeKey(s) {
+  return String(s||'').replace(/[\s\-_·•\.]/g,'').toLowerCase();
+}
+
+/* ── 유연한 열 값 추출 ──
+   1) 정확 일치  2) 부분 포함  3) 후보 키워드 중 하나라도 포함 */
 function getField(row, ...keys) {
+  const rowKeys = Object.keys(row);
   for (const k of keys) {
-    const found = Object.keys(row).find(rk =>
-      rk.replace(/\s/g,'').toLowerCase() === k.replace(/\s/g,'').toLowerCase()
-    );
-    if (found !== undefined && row[found] !== undefined && String(row[found]).trim() !== '') {
-      return String(row[found]).trim();
+    const nk = normalizeKey(k);
+    // 1) 정규화 정확 일치
+    let found = rowKeys.find(rk => normalizeKey(rk) === nk);
+    // 2) 행 키가 검색어를 포함하거나, 검색어가 행 키를 포함
+    if (!found) found = rowKeys.find(rk => {
+      const nrk = normalizeKey(rk);
+      return nrk.includes(nk) || nk.includes(nrk);
+    });
+    if (found !== undefined) {
+      const v = String(row[found]||'').trim();
+      if (v !== '') return v;
     }
   }
   return '';
+}
+
+/* ── 위치(인덱스) 기반 값 추출: 헤더 없는 파일용 ── */
+function getFieldByPos(row, pos) {
+  const v = Object.values(row)[pos];
+  return v !== undefined ? String(v).trim() : '';
+}
+
+/* ── 헤더가 '문제' 형식인지 확인 ── */
+function hasProperHeaders(rows) {
+  if (!rows || rows.length === 0) return false;
+  const keys = Object.keys(rows[0]).map(normalizeKey);
+  return keys.some(k => k.includes('문제') || k.includes('question') || k.includes('질문'));
 }
 
 function processRows(rows) {
@@ -748,34 +806,61 @@ function processRows(rows) {
     showToast('⚠️ 데이터가 없습니다. 파일 형식을 확인하세요.', 'err'); return;
   }
 
+  /* 헤더가 없는 파일: 위치 기반 처리
+     A열=문제, B열=보기1, C열=보기2, D열=보기3, E열=보기4, F열=보기5, G열=정답, H열=해설 */
+  const usePosition = !hasProperHeaders(rows);
+
   const qs = [];
   rows.forEach((row, idx) => {
-    const qText = getField(row, '문제', 'question', '질문', '내용', 'Q');
-    if (!qText) return;
+    let qText, subject, choices, type, answer, explanation, num;
 
-    let subject = getField(row, '과목', 'subject', '교과');
-    if (!subject) subject = classifySubject(
-      getField(row,'이든X학원평가내용','이든X학원 평가 내용','meta') + ' ' + qText
-    );
+    if (usePosition) {
+      qText       = getFieldByPos(row, 0);
+      const c1    = getFieldByPos(row, 1);
+      const c2    = getFieldByPos(row, 2);
+      const c3    = getFieldByPos(row, 3);
+      const c4    = getFieldByPos(row, 4);
+      const c5    = getFieldByPos(row, 5);
+      answer      = getFieldByPos(row, 6);
+      explanation = getFieldByPos(row, 7);
+      subject     = classifySubject(qText);
+      choices     = [c1,c2,c3,c4,c5].filter(Boolean);
+      type        = choices.length > 0 ? '객관식' : '주관식';
+      num         = String(idx + 1);
+    } else {
+      qText = getField(row, '문제', 'question', '질문', '내용', 'Q', '문항', '지문');
+      if (!qText) return;
 
-    const choices = [];
-    for (let i = 1; i <= 5; i++) {
-      const c = getField(row, `보기${i}`, `선택지${i}`, `choice${i}`, `option${i}`, `보기 ${i}`);
-      if (c) choices.push(c);
+      subject = getField(row, '과목', 'subject', '교과', '과');
+      if (!subject) subject = classifySubject(
+        getField(row,'이든X학원평가내용','이든X학원평가','meta','비고') + ' ' + qText
+      );
+
+      choices = [];
+      for (let i = 1; i <= 5; i++) {
+        const c = getField(row,
+          `보기${i}`, `보기 ${i}`, `선택지${i}`, `선택 ${i}`,
+          `choice${i}`, `option${i}`, `항목${i}`, `답지${i}`
+        );
+        if (c) choices.push(c);
+      }
+
+      type        = getField(row, '유형', 'type', '문제유형', '형태');
+      if (!type) type = choices.length > 0 ? '객관식' : '주관식';
+      answer      = getField(row, '정답', 'answer', 'ans', '답', '답안');
+      explanation = getField(row, '해설', 'explanation', '풀이', '설명', '해설풀이');
+      num         = getField(row, '번호', 'no', 'number', 'num', '문번') || String(idx + 1);
     }
 
-    let type = getField(row, '유형', 'type');
-    if (!type) type = choices.length > 0 ? '객관식' : '주관식';
-
-    const answer      = getField(row, '정답', 'answer', 'ans', '답');
-    const explanation = getField(row, '해설', 'explanation', '풀이', '설명');
-    const num         = getField(row, '번호', 'no', 'number', 'num') || String(idx + 1);
-
+    if (!qText) return;
     qs.push({ id: idx, num, subject, type, question: qText, choices, answer, explanation });
   });
 
   if (qs.length === 0) {
-    showToast('⚠️ "문제" 열을 찾을 수 없습니다. 헤더를 확인하세요.', 'err'); return;
+    // 어떤 열이 있었는지 알려줌
+    const foundKeys = rows[0] ? Object.keys(rows[0]).join(', ') : '(없음)';
+    showToast(`⚠️ 문제를 읽지 못했습니다. 발견된 열: [${foundKeys}]`, 'err');
+    return;
   }
 
   // 로컬스토리지에 저장 (학생도 볼 수 있도록)
