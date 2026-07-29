@@ -6,1077 +6,990 @@
 <title>이든X학원 문제 풀이 시스템</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  /* ============================================
-     DESIGN TOKENS
-     네이비 기반 + 포인트 오렌지, 청결하고 학문적인 분위기
-  ============================================ */
-  :root {
-    --navy:       #1B2E4B;
-    --navy-mid:   #243D63;
-    --navy-light: #3A5A8A;
-    --sky:        #4A90D9;
-    --orange:     #F5820D;
-    --orange-lt:  #FFF0DC;
-    --white:      #FFFFFF;
-    --gray-bg:    #F4F6FA;
-    --gray-lt:    #E8ECF2;
-    --gray-mid:   #B0BBC8;
-    --gray-dk:    #6B7A8D;
-    --text:       #1B2E4B;
-    --green:      #27AE60;
-    --red:        #E74C3C;
-    --green-lt:   #E8F8EF;
-    --red-lt:     #FDEDEB;
-    --radius-sm:  8px;
-    --radius-md:  14px;
-    --radius-lg:  20px;
-    --shadow-sm:  0 2px 8px rgba(27,46,75,0.08);
-    --shadow-md:  0 4px 20px rgba(27,46,75,0.12);
-    --shadow-lg:  0 8px 40px rgba(27,46,75,0.18);
-    --font-base:  'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
-  }
+:root {
+  --navy:      #1B2E4B;
+  --navy-mid:  #243D63;
+  --navy-lt:   #2E4A72;
+  --gold:      #C9952A;
+  --gold-lt:   #F0C96A;
+  --sky:       #4A90D9;
+  --white:     #FFFFFF;
+  --gray-bg:   #F4F6FA;
+  --gray-lt:   #E8ECF2;
+  --gray-mid:  #B0BBC8;
+  --gray-dk:   #6B7A8D;
+  --green:     #27AE60;
+  --red:       #E74C3C;
+  --green-lt:  #E8F8EF;
+  --red-lt:    #FDEDEB;
+  --r-sm: 8px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
+  --sh-sm: 0 2px 8px rgba(27,46,75,.08);
+  --sh-md: 0 4px 20px rgba(27,46,75,.14);
+  --sh-lg: 0 8px 40px rgba(27,46,75,.22);
+  --font: 'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--navy);color:var(--white);font-size:17px;line-height:1.7;min-height:100vh}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── 로그인 화면 ── */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+  background:linear-gradient(160deg,#1B2E4B 0%,#243D63 60%,#1a3a5c 100%);
+}
+.login-box{
+  background:var(--navy-mid);
+  border-radius:var(--r-xl);
+  padding:48px 44px 40px;
+  width:100%;max-width:420px;
+  box-shadow:var(--sh-lg),0 0 0 1px rgba(201,149,42,.15);
+  text-align:center;
+}
+.login-logo{font-size:30px;font-weight:900;letter-spacing:2px;color:var(--white);margin-bottom:6px}
+.login-logo span{color:var(--gold-lt)}
+.login-tagline{font-size:14px;color:var(--gray-mid);margin-bottom:36px;letter-spacing:.5px}
+.field-label{display:block;text-align:left;font-size:14px;font-weight:700;color:var(--gold-lt);margin-bottom:8px}
+.field-input{
+  width:100%;padding:15px 18px;
+  border:2px solid rgba(255,255,255,.1);
+  border-radius:var(--r-sm);
+  background:rgba(255,255,255,.07);
+  color:var(--white);font-size:16px;font-family:var(--font);
+  margin-bottom:18px;transition:border-color .2s;
+}
+.field-input::placeholder{color:rgba(255,255,255,.3)}
+.field-input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.1)}
+.btn-login{
+  width:100%;padding:17px;
+  background:var(--gold);color:var(--navy);
+  border:none;border-radius:var(--r-sm);
+  font-size:18px;font-weight:800;font-family:var(--font);
+  cursor:pointer;transition:all .2s;margin-bottom:16px;
+}
+.btn-login:hover{background:var(--gold-lt)}
+.btn-login:active{transform:scale(.98)}
+.admin-link{font-size:14px;color:var(--gold);cursor:pointer;text-decoration:underline;background:none;border:none;font-family:var(--font)}
+.admin-link:hover{color:var(--gold-lt)}
+.login-error{
+  background:rgba(231,76,60,.15);border:1px solid var(--red);
+  color:#ff8a80;border-radius:var(--r-sm);padding:11px 16px;
+  font-size:14px;margin-bottom:16px;display:none;
+}
+.login-loading{font-size:13px;color:var(--gray-mid);margin-top:10px;display:none}
 
-  body {
-    font-family: var(--font-base);
-    background: var(--gray-bg);
-    color: var(--text);
-    font-size: 17px;
-    line-height: 1.7;
-    min-height: 100vh;
-  }
+/* ── 메인 앱 ── */
+#app-screen{display:none;background:var(--gray-bg);min-height:100vh;color:var(--navy)}
 
-  /* ============================================
-     HEADER
-  ============================================ */
-  header {
-    background: var(--navy);
-    color: var(--white);
-    padding: 0 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 64px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow-md);
-  }
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-  }
-  .logo-badge {
-    background: var(--orange);
-    color: var(--white);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-  }
-  .header-actions { display: flex; gap: 10px; align-items: center; }
+header{
+  background:var(--navy);color:var(--white);
+  padding:0 24px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 12px rgba(0,0,0,.2);
+}
+.hdr-logo{font-size:18px;font-weight:800;letter-spacing:1px}
+.hdr-logo span{color:var(--gold-lt)}
+.hdr-user{font-size:13px;color:var(--gray-mid);display:flex;align-items:center;gap:12px}
+.hdr-user strong{color:var(--gold-lt)}
+.btn-sm{
+  padding:7px 14px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:var(--white);
+  border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);
+}
+.btn-sm:hover{background:rgba(255,255,255,.16)}
 
-  /* ============================================
-     BUTTONS
-  ============================================ */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: var(--font-base);
-    white-space: nowrap;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn-primary { background: var(--sky); color: var(--white); }
-  .btn-primary:hover { background: var(--navy-light); }
-  .btn-orange { background: var(--orange); color: var(--white); }
-  .btn-orange:hover { background: #d96f00; }
-  .btn-ghost { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid rgba(255,255,255,0.25); }
-  .btn-ghost:hover { background: rgba(255,255,255,0.2); }
-  .btn-outline { background: var(--white); color: var(--navy); border: 2px solid var(--navy); }
-  .btn-outline:hover { background: var(--navy); color: var(--white); }
-  .btn-danger { background: var(--red); color: var(--white); }
-  .btn-lg {
-    padding: 18px 36px;
-    font-size: 19px;
-    border-radius: var(--radius-md);
-  }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+main{max-width:900px;margin:0 auto;padding:28px 18px 90px}
 
-  /* ============================================
-     MAIN LAYOUT
-  ============================================ */
-  main {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
-  }
+/* ── 관리자 패널 ── */
+#admin-panel{
+  background:var(--white);border-radius:var(--r-lg);
+  padding:32px;margin-bottom:24px;box-shadow:var(--sh-md);
+}
+#admin-panel h2{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.admin-tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.tab-btn{
+  padding:9px 20px;border-radius:var(--r-sm);font-size:14px;font-weight:700;
+  cursor:pointer;border:2px solid var(--gray-lt);background:var(--gray-bg);color:var(--gray-dk);
+  font-family:var(--font);transition:all .18s;
+}
+.tab-btn.active{border-color:var(--navy);background:var(--navy);color:var(--white)}
 
-  /* ============================================
-     UPLOAD SECTION
-  ============================================ */
-  #upload-section {
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    padding: 48px 40px;
-    box-shadow: var(--shadow-md);
-    text-align: center;
-  }
-  .upload-title {
-    font-size: 26px;
-    font-weight: 800;
-    color: var(--navy);
-    margin-bottom: 8px;
-  }
-  .upload-subtitle {
-    color: var(--gray-dk);
-    font-size: 16px;
-    margin-bottom: 36px;
-  }
-  .drop-zone {
-    border: 2.5px dashed var(--gray-mid);
-    border-radius: var(--radius-md);
-    padding: 52px 24px;
-    cursor: pointer;
-    transition: all 0.25s;
-    background: var(--gray-bg);
-    position: relative;
-  }
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--sky);
-    background: #EBF4FD;
-  }
-  .drop-zone input[type="file"] {
-    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-  }
-  .drop-icon { font-size: 52px; margin-bottom: 16px; }
-  .drop-text { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
-  .drop-hint { font-size: 14px; color: var(--gray-dk); }
+/* 파일 업로드 존 */
+.drop-zone{
+  border:2.5px dashed var(--gray-mid);border-radius:var(--r-md);
+  padding:44px 20px;cursor:pointer;transition:all .22s;
+  background:var(--gray-bg);text-align:center;position:relative;
+}
+.drop-zone:hover,.drop-zone.over{border-color:var(--sky);background:#EBF4FD}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:44px;margin-bottom:12px}
+.drop-text{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.drop-hint{font-size:13px;color:var(--gray-dk)}
+.file-name-display{
+  margin-top:12px;padding:10px 16px;background:var(--navy);color:var(--white);
+  border-radius:var(--r-sm);font-size:14px;display:none;
+}
+.btn-upload{
+  margin-top:14px;width:100%;padding:15px;
+  background:var(--navy);color:var(--white);
+  border:none;border-radius:var(--r-sm);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:var(--font);
+  transition:background .2s;display:none;
+}
+.btn-upload:hover{background:var(--navy-lt)}
 
-  .format-guide {
-    margin-top: 32px;
-    text-align: left;
-    background: var(--navy);
-    color: var(--white);
-    border-radius: var(--radius-md);
-    padding: 24px 28px;
-  }
-  .format-guide h3 {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--orange);
-    letter-spacing: 0.5px;
-  }
-  .format-guide table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-  }
-  .format-guide th {
-    background: rgba(255,255,255,0.1);
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
-    font-weight: 700;
-    color: var(--orange);
-  }
-  .format-guide td {
-    padding: 7px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    color: rgba(255,255,255,0.85);
-    font-size: 13px;
-  }
-  .format-guide .tip {
-    margin-top: 14px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.65);
-    line-height: 1.6;
-  }
+/* 학생 목록 관리 */
+.student-list-area{max-height:280px;overflow-y:auto;margin-top:12px;border:1px solid var(--gray-lt);border-radius:var(--r-sm)}
+.student-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--gray-lt);font-size:14px;
+}
+.student-row:last-child{border-bottom:none}
+.student-row:nth-child(even){background:var(--gray-bg)}
+.student-name{font-weight:700;color:var(--navy)}
+.badge-ok{background:#E8F8EF;color:var(--green);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700}
 
-  /* ============================================
-     QUIZ SECTION
-  ============================================ */
-  #quiz-section { display: none; }
+.format-box{
+  background:var(--navy);color:var(--white);border-radius:var(--r-md);
+  padding:20px 24px;margin-top:18px;font-size:13px;
+}
+.format-box h4{color:var(--gold-lt);font-size:14px;margin-bottom:10px}
+.format-box table{width:100%;border-collapse:collapse}
+.format-box th{color:var(--gold-lt);padding:6px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px}
+.format-box td{padding:5px 10px;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
 
-  .quiz-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-  .quiz-info {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .subject-badge {
-    font-size: 14px;
-    font-weight: 700;
-    padding: 5px 14px;
-    border-radius: 20px;
-    background: var(--navy);
-    color: var(--white);
-  }
-  .subject-badge.국어 { background: #6C5CE7; }
-  .subject-badge.수학 { background: #00B894; }
-  .subject-badge.영어 { background: var(--sky); }
-  .subject-badge.기타 { background: var(--gray-dk); }
+/* ── 퀴즈 영역 ── */
+#quiz-section{display:none}
+.quiz-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.subject-badge{
+  font-size:13px;font-weight:700;padding:5px 14px;
+  border-radius:20px;background:var(--navy);color:var(--white);
+}
+.subject-badge.국어{background:#6C5CE7}
+.subject-badge.수학{background:#00B894}
+.subject-badge.영어{background:var(--sky)}
+.prog-wrap{flex:1;min-width:180px}
+.prog-count{font-size:13px;color:var(--gray-dk);margin-bottom:5px}
+.prog-bg{height:7px;background:var(--gray-lt);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--gold));border-radius:4px;transition:width .4s}
 
-  .quiz-progress-wrap {
-    flex: 1;
-    min-width: 200px;
-  }
-  .quiz-count { font-size: 14px; color: var(--gray-dk); margin-bottom: 6px; }
-  .progress-bar-bg {
-    height: 8px;
-    background: var(--gray-lt);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--sky), var(--orange));
-    border-radius: 4px;
-    transition: width 0.4s;
-  }
+.q-card{
+  background:var(--white);border-radius:var(--r-md);
+  padding:26px 28px;margin-bottom:18px;
+  box-shadow:var(--sh-sm);border-left:5px solid var(--gray-lt);
+  transition:border-color .2s;
+}
+.q-card.answered{border-left-color:var(--sky)}
+.q-card.correct{border-left-color:var(--green);background:var(--green-lt)}
+.q-card.incorrect{border-left-color:var(--red);background:var(--red-lt)}
+.q-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.q-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:32px;height:32px;background:var(--navy);color:var(--white);
+  border-radius:50%;font-size:14px;font-weight:800;flex-shrink:0;
+}
+.q-text{font-size:17px;font-weight:600;color:var(--navy);line-height:1.85;flex:1}
+.q-card.국어 .q-text{line-height:2.1}
+.q-card.수학 .q-text{font-size:18px}
+.q-card.영어 .q-text{font-family:'Georgia',serif;line-height:1.95}
 
-  /* ============================================
-     QUESTION CARD
-  ============================================ */
-  .q-card {
-    background: var(--white);
-    border-radius: var(--radius-md);
-    padding: 28px 32px;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow-sm);
-    border-left: 5px solid var(--gray-lt);
-    transition: border-color 0.2s;
-  }
-  .q-card.answered { border-left-color: var(--sky); }
-  .q-card.correct   { border-left-color: var(--green); background: var(--green-lt); }
-  .q-card.incorrect { border-left-color: var(--red);   background: var(--red-lt); }
+.choices{display:flex;flex-direction:column;gap:9px}
+.choice-btn{
+  display:flex;align-items:center;gap:13px;
+  padding:13px 16px;border:2px solid var(--gray-lt);border-radius:var(--r-sm);
+  background:var(--gray-bg);cursor:pointer;font-size:15px;
+  text-align:left;transition:all .17s;font-family:var(--font);
+  color:var(--navy);line-height:1.55;min-height:50px;
+}
+.choice-btn:hover{border-color:var(--sky);background:#EBF4FD}
+.choice-btn.selected{border-color:var(--sky);background:#D6EAFB;font-weight:700}
+.choice-btn.correct-ans{border-color:var(--green);background:var(--green-lt);color:var(--green);font-weight:700}
+.choice-btn.wrong-ans{border-color:var(--red);background:var(--red-lt);color:var(--red);font-weight:700}
+.choice-btn:disabled{cursor:default}
+.choice-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:26px;height:26px;border-radius:50%;
+  border:2px solid var(--gray-mid);font-size:13px;font-weight:700;flex-shrink:0;
+}
+.choice-btn.selected .choice-num{background:var(--sky);border-color:var(--sky);color:var(--white)}
+.choice-btn.correct-ans .choice-num{background:var(--green);border-color:var(--green);color:var(--white)}
+.choice-btn.wrong-ans .choice-num{background:var(--red);border-color:var(--red);color:var(--white)}
 
-  .q-number {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px; height: 34px;
-    background: var(--navy);
-    color: var(--white);
-    border-radius: 50%;
-    font-size: 15px;
-    font-weight: 800;
-    margin-bottom: 14px;
-    flex-shrink: 0;
-  }
-  .q-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
-  .q-text {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--navy);
-    line-height: 1.8;
-    flex: 1;
-  }
-  /* 국어 지문은 줄간격 넓게 */
-  .q-card.국어 .q-text { line-height: 2.1; }
-  /* 수학은 폰트 약간 키우고 공간 넉넉히 */
-  .q-card.수학 .q-text { font-size: 18px; }
-  /* 영어 지문은 영문 폰트 혼용 자연스럽게 */
-  .q-card.영어 .q-text { font-family: 'Georgia', 'Noto Serif', serif; line-height: 1.9; }
+.subj-input{
+  width:100%;padding:13px 16px;border:2px solid var(--gray-lt);
+  border-radius:var(--r-sm);font-size:16px;font-family:var(--font);
+  color:var(--navy);background:var(--gray-bg);transition:border-color .2s;margin-top:4px;
+}
+.subj-input:focus{outline:none;border-color:var(--sky);background:var(--white)}
 
-  /* 객관식 선택지 */
-  .choices { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-  .choice-btn {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 18px;
-    border: 2px solid var(--gray-lt);
-    border-radius: var(--radius-sm);
-    background: var(--gray-bg);
-    cursor: pointer;
-    font-size: 16px;
-    text-align: left;
-    transition: all 0.18s;
-    font-family: var(--font-base);
-    color: var(--text);
-    line-height: 1.6;
-    min-height: 52px;
-  }
-  .choice-btn:hover { border-color: var(--sky); background: #EBF4FD; }
-  .choice-btn.selected {
-    border-color: var(--sky);
-    background: #D6EAFB;
-    color: var(--navy);
-    font-weight: 700;
-  }
-  .choice-btn.correct-ans {
-    border-color: var(--green);
-    background: var(--green-lt);
-    color: var(--green);
-    font-weight: 700;
-  }
-  .choice-btn.wrong-ans {
-    border-color: var(--red);
-    background: var(--red-lt);
-    color: var(--red);
-    font-weight: 700;
-  }
-  .choice-btn:disabled { cursor: default; }
+.q-result{margin-top:14px;padding:13px 16px;border-radius:var(--r-sm);font-size:14px;display:none}
+.q-result.show{display:block}
+.q-result.cr{background:var(--green-lt);border:1px solid var(--green);color:var(--green)}
+.q-result.wr{background:var(--red-lt);border:1px solid var(--red);color:var(--red)}
+.q-result .rl{font-weight:800;font-size:15px;margin-bottom:5px}
+.q-result .ex{color:var(--navy);margin-top:7px;font-size:14px;line-height:1.7}
 
-  .choice-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px; height: 28px;
-    border-radius: 50%;
-    border: 2px solid var(--gray-mid);
-    font-size: 13px;
-    font-weight: 700;
-    flex-shrink: 0;
-    transition: all 0.18s;
-  }
-  .choice-btn.selected .choice-num {
-    background: var(--sky); border-color: var(--sky); color: var(--white);
-  }
-  .choice-btn.correct-ans .choice-num {
-    background: var(--green); border-color: var(--green); color: var(--white);
-  }
-  .choice-btn.wrong-ans .choice-num {
-    background: var(--red); border-color: var(--red); color: var(--white);
-  }
+#score-panel{
+  display:none;background:var(--navy);color:var(--white);
+  border-radius:var(--r-lg);padding:32px 36px;margin-bottom:24px;
+  text-align:center;box-shadow:var(--sh-lg);
+}
+#score-panel h2{font-size:20px;margin-bottom:20px}
+.score-big{font-size:68px;font-weight:900;color:var(--gold-lt);line-height:1;margin-bottom:6px}
+.score-sub{font-size:17px;color:rgba(255,255,255,.65);margin-bottom:22px}
+.score-stats{display:flex;justify-content:center;gap:28px;flex-wrap:wrap;margin-bottom:24px}
+.score-stat{text-align:center}
+.score-stat .n{font-size:30px;font-weight:800}
+.score-stat .l{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
+.score-stat.cr .n{color:var(--green)}
+.score-stat.wr .n{color:var(--red)}
 
-  /* 주관식 입력 */
-  .subjective-input {
-    width: 100%;
-    padding: 14px 18px;
-    border: 2px solid var(--gray-lt);
-    border-radius: var(--radius-sm);
-    font-size: 16px;
-    font-family: var(--font-base);
-    color: var(--text);
-    background: var(--gray-bg);
-    transition: border-color 0.2s;
-    margin-top: 4px;
-  }
-  .subjective-input:focus { outline: none; border-color: var(--sky); background: var(--white); }
+/* ── 하단 액션바 ── */
+#action-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--white);padding:12px 20px;
+  box-shadow:0 -3px 20px rgba(27,46,75,.13);
+  display:none;z-index:99;
+}
+.ab-inner{max-width:900px;margin:0 auto;display:flex;gap:10px;flex-wrap:wrap}
+.btn-act{
+  flex:1;min-width:140px;padding:16px;border:none;border-radius:var(--r-sm);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .2s;
+}
+.btn-act:active{transform:scale(.97)}
+#btn-grade{background:var(--gold);color:var(--navy)}
+#btn-grade:hover{background:var(--gold-lt)}
+#btn-retry{background:var(--white);color:var(--navy);border:2px solid var(--navy);display:none}
+#btn-retry:hover{background:var(--navy);color:var(--white)}
+#btn-wrong{background:var(--sky);color:var(--white);display:none}
+#btn-wrong:hover{background:#2276c4}
 
-  /* 채점 결과 표시 */
-  .q-result {
-    margin-top: 16px;
-    padding: 14px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 15px;
-    display: none;
-  }
-  .q-result.show { display: block; }
-  .q-result.correct-result { background: var(--green-lt); border: 1px solid var(--green); color: var(--green); }
-  .q-result.wrong-result   { background: var(--red-lt);   border: 1px solid var(--red);   color: var(--red); }
-  .q-result .result-label { font-weight: 800; font-size: 16px; margin-bottom: 6px; }
-  .q-result .explanation  { color: var(--gray-dk); margin-top: 8px; font-size: 15px; line-height: 1.7; color: var(--navy); }
+/* ── 토스트 ── */
+.toast{
+  position:fixed;top:72px;right:20px;
+  background:var(--navy);color:var(--white);
+  padding:13px 20px;border-radius:var(--r-sm);
+  font-size:14px;font-weight:600;box-shadow:var(--sh-lg);
+  z-index:300;opacity:0;transform:translateY(-8px);
+  transition:all .28s;pointer-events:none;max-width:320px;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.err{background:var(--red)}
+.toast.ok{background:var(--green)}
 
-  /* ============================================
-     SCORE PANEL
-  ============================================ */
-  #score-panel {
-    display: none;
-    background: var(--navy);
-    color: var(--white);
-    border-radius: var(--radius-lg);
-    padding: 36px 40px;
-    margin-bottom: 28px;
-    text-align: center;
-    box-shadow: var(--shadow-lg);
-  }
-  #score-panel h2 { font-size: 22px; margin-bottom: 24px; letter-spacing: -0.5px; }
-  .score-big {
-    font-size: 72px;
-    font-weight: 900;
-    color: var(--orange);
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-  .score-sub { font-size: 18px; color: rgba(255,255,255,0.7); margin-bottom: 24px; }
-  .score-stats {
-    display: flex;
-    justify-content: center;
-    gap: 32px;
-    flex-wrap: wrap;
-    margin-bottom: 28px;
-  }
-  .score-stat { text-align: center; }
-  .score-stat .num { font-size: 32px; font-weight: 800; }
-  .score-stat .lbl { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-  .score-stat.correct .num { color: var(--green); }
-  .score-stat.wrong .num { color: var(--red); }
+/* ── 빈 상태 ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--gray-dk)}
+.empty-state .ei{font-size:48px;margin-bottom:14px}
 
-  /* ============================================
-     BOTTOM ACTION BAR
-  ============================================ */
-  #action-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: var(--white);
-    padding: 14px 24px;
-    box-shadow: 0 -4px 24px rgba(27,46,75,0.13);
-    display: none;
-    z-index: 99;
-  }
-  .action-bar-inner {
-    max-width: 900px;
-    margin: 0 auto;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  #btn-grade { flex: 1; min-width: 200px; }
-  #btn-retry, #btn-wrong-only { flex: 1; min-width: 160px; display: none; }
+/* ── 스피너 ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:var(--white);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 
-  /* ============================================
-     TOAST
-  ============================================ */
-  .toast {
-    position: fixed;
-    top: 80px; right: 24px;
-    background: var(--navy);
-    color: var(--white);
-    padding: 14px 22px;
-    border-radius: var(--radius-sm);
-    font-size: 15px;
-    font-weight: 600;
-    box-shadow: var(--shadow-lg);
-    z-index: 200;
-    transform: translateY(-10px);
-    opacity: 0;
-    transition: all 0.3s;
-    pointer-events: none;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
+/* ── 반응형 ── */
+@media(max-width:600px){
+  .login-box{padding:32px 20px}
+  main{padding:16px 12px 90px}
+  .q-card{padding:18px 14px}
+  .choice-btn{font-size:14px;padding:12px 13px}
+  #admin-panel{padding:20px 16px}
+  .score-big{font-size:52px}
+}
 
-  /* ============================================
-     RESPONSIVE
-  ============================================ */
-  @media (max-width: 600px) {
-    main { padding: 16px 12px 100px; }
-    #upload-section { padding: 28px 18px; }
-    .upload-title { font-size: 21px; }
-    .q-card { padding: 20px 16px; }
-    .choice-btn { font-size: 15px; padding: 13px 14px; }
-    header { padding: 0 16px; }
-    .logo { font-size: 17px; }
-    .format-guide { padding: 18px 16px; }
-    .format-guide table { font-size: 12px; }
-    .score-big { font-size: 56px; }
-    #score-panel { padding: 28px 20px; }
-  }
-
-  @media (min-width: 768px) {
-    /* 태블릿: 선택지 2열 배치 허용 (4지선다 이하일 때) */
-    .choices.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  }
-
-  /* ============================================
-     PRINT STYLES
-  ============================================ */
-  @media print {
-    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    header, #upload-section, #action-bar, #score-panel,
-    .quiz-meta .header-actions, #btn-print,
-    .q-result, .choice-btn.correct-ans, .choice-btn.wrong-ans,
-    .choice-btn.selected { all: revert; }
-
-    body { background: white; font-size: 14px; color: #000; }
-    header { display: none !important; }
-    #upload-section { display: none !important; }
-    #action-bar { display: none !important; }
-    #score-panel { display: none !important; }
-    .q-result { display: none !important; }
-
-    main { max-width: 100%; padding: 0; margin: 0; }
-
-    .print-header {
-      display: block !important;
-      text-align: center;
-      padding: 12px 0 18px;
-      border-bottom: 2px solid #1B2E4B;
-      margin-bottom: 20px;
-    }
-    .print-header h1 { font-size: 18px; font-weight: 800; color: #1B2E4B; }
-    .print-header p  { font-size: 12px; color: #666; margin-top: 4px; }
-
-    #quiz-section { display: block !important; }
-
-    .quiz-meta .quiz-progress-wrap,
-    .quiz-meta .btn { display: none; }
-
-    .q-card {
-      border: 1px solid #ddd;
-      border-left: 4px solid #1B2E4B;
-      border-radius: 0;
-      margin-bottom: 18px;
-      padding: 16px 18px;
-      box-shadow: none;
-      background: white;
-      page-break-inside: avoid;
-    }
-    .q-card.correct, .q-card.incorrect { background: white; }
-
-    .choice-btn {
-      border: 1px solid #ccc;
-      background: white;
-      padding: 9px 14px;
-      font-size: 13px;
-      border-radius: 4px;
-    }
-    .choice-btn.selected, .choice-btn.correct-ans, .choice-btn.wrong-ans {
-      border: 1px solid #ccc;
-      background: white;
-      color: #000;
-    }
-    .choice-num { border: 1px solid #999; background: white; color: #000; }
-
-    .subjective-input { border: 1px solid #ccc; background: white; }
-
-    .subject-badge { background: #1B2E4B !important; color: white !important; }
-
-    /* 정답란 영역 (인쇄 시 빈칸) */
-    .answer-box-print {
-      display: block !important;
-      margin-top: 10px;
-      border: 1px solid #aaa;
-      height: 32px;
-      border-radius: 4px;
-    }
-  }
-
-  .print-header { display: none; }
-  .answer-box-print { display: none; }
-
-  /* ============================================
-     LOADING SPINNER
-  ============================================ */
-  .spinner {
-    display: inline-block;
-    width: 20px; height: 20px;
-    border: 3px solid rgba(255,255,255,0.3);
-    border-top-color: var(--white);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ============================================
-     EMPTY STATE
-  ============================================ */
-  .empty-tip {
-    text-align: center;
-    padding: 48px 24px;
-    color: var(--gray-dk);
-  }
-  .empty-tip .icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-tip p { font-size: 16px; }
+/* ── 인쇄 ── */
+@media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #login-screen,header,#admin-panel,#action-bar,#score-panel,.q-result,.quiz-meta .btn-sm{display:none!important}
+  body,#app-screen{background:white;color:#000}
+  main{max-width:100%;padding:0}
+  .print-hdr{display:block!important;text-align:center;padding:10px 0 16px;border-bottom:2px solid #1B2E4B;margin-bottom:18px}
+  .print-hdr h1{font-size:17px;font-weight:800;color:#1B2E4B}
+  .print-hdr p{font-size:12px;color:#555;margin-top:3px}
+  #quiz-section{display:block!important}
+  .q-card{border:1px solid #ddd;border-left:4px solid #1B2E4B;border-radius:0;margin-bottom:16px;padding:14px 16px;box-shadow:none;background:white;page-break-inside:avoid}
+  .q-card.correct,.q-card.incorrect{background:white}
+  .choice-btn{border:1px solid #ccc;background:white;padding:8px 13px;font-size:13px;border-radius:4px}
+  .choice-btn.selected,.choice-btn.correct-ans,.choice-btn.wrong-ans{border:1px solid #ccc;background:white;color:#000}
+  .choice-num{border:1px solid #999;background:white;color:#000}
+  .q-result{display:none!important}
+}
+.print-hdr{display:none}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<header>
-  <div class="logo">
-    <span>이든X학원</span>
-    <span class="logo-badge">문제풀이</span>
-  </div>
-  <div class="header-actions">
-    <button class="btn btn-ghost" id="btn-print" onclick="window.print()" style="display:none">
-      🖨️ A4 프린트
-    </button>
-    <button class="btn btn-ghost" id="btn-new" onclick="resetAll()" style="display:none">
-      ＋ 새 문제
-    </button>
-  </div>
-</header>
+<!-- ══════════════════════════════════════
+     로그인 화면
+══════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">EDEN <span>X</span></div>
+    <div class="login-tagline">단어카드 · Word Master</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+    <div class="login-error" id="login-error">이름 또는 비밀번호가 올바르지 않습니다.</div>
+    <div class="login-loading" id="login-loading">⏳ 학생 정보 확인 중...</div>
 
-<!-- PRINT HEADER (인쇄 전용) -->
-<div class="print-header" id="print-header">
-  <h1>이든X학원 평가지</h1>
-  <p id="print-meta">과목: — &nbsp;|&nbsp; 총 문항: — &nbsp;|&nbsp; 날짜: —</p>
+    <label class="field-label" for="inp-name">이름</label>
+    <input class="field-input" id="inp-name" type="text" placeholder="이름을 입력하세요" autocomplete="off">
+
+    <label class="field-label" for="inp-pw">비밀번호</label>
+    <input class="field-input" id="inp-pw" type="password" placeholder="비밀번호를 입력하세요">
+
+    <button class="btn-login" onclick="doLogin()">로그인</button>
+    <button class="admin-link" onclick="showAdminLogin()">관리자로 로그인</button>
+  </div>
 </div>
 
-<main>
-
-  <!-- ① 업로드 섹션 -->
-  <section id="upload-section">
-    <div class="upload-title">📋 이든X 문제 풀이 시스템</div>
-    <div class="upload-subtitle">CSV · TXT · Excel(.xlsx) 파일을 올리면 바로 문제 풀이를 시작합니다</div>
-
-    <div class="drop-zone" id="drop-zone">
-      <input type="file" id="file-input" accept=".csv,.txt,.xlsx,.xls">
-      <div class="drop-icon">📂</div>
-      <div class="drop-text">파일을 여기에 끌어다 놓거나 클릭하여 선택</div>
-      <div class="drop-hint">CSV · TXT · Excel(.xlsx) 지원 · 최대 10MB</div>
+<!-- ══════════════════════════════════════
+     메인 앱
+══════════════════════════════════════ -->
+<div id="app-screen">
+  <header>
+    <div class="hdr-logo">EDEN <span>X</span></div>
+    <div class="hdr-user">
+      <strong id="hdr-uname"></strong>님
+      <button class="btn-sm" onclick="window.print()" id="btn-print" style="display:none">🖨️ 인쇄</button>
+      <button class="btn-sm" onclick="doLogout()">로그아웃</button>
     </div>
+  </header>
 
-    <div class="format-guide">
-      <h3>📌 파일 데이터 양식 안내</h3>
-      <table>
-        <tr>
-          <th>열 이름 (헤더)</th>
-          <th>설명</th>
-          <th>필수/선택</th>
-        </tr>
-        <tr><td>번호</td><td>문항 번호 (1, 2, 3 …)</td><td>선택</td></tr>
-        <tr><td>과목</td><td>국어 / 수학 / 영어 (없으면 키워드로 자동 분류)</td><td>선택</td></tr>
-        <tr><td>유형</td><td>객관식 / 주관식 (없으면 보기 존재 여부로 자동 판별)</td><td>선택</td></tr>
-        <tr><td>문제</td><td>문제 본문 텍스트 <strong>← 필수</strong></td><td>필수</td></tr>
-        <tr><td>보기1 ~ 보기5</td><td>객관식 선택지 (최대 5개)</td><td>객관식 필수</td></tr>
-        <tr><td>정답</td><td>객관식: 1~5 번호 / 주관식: 정답 텍스트</td><td>필수</td></tr>
-        <tr><td>해설</td><td>채점 후 표시할 해설 텍스트</td><td>선택</td></tr>
-        <tr><td>이든X학원 평가 내용</td><td>과목 자동 분류용 메타 텍스트</td><td>선택</td></tr>
-      </table>
-      <div class="tip">
-        💡 <strong>TXT/CSV 사용 시:</strong> 쉼표(,)로 열 구분, 첫 행에 위 헤더 입력<br>
-        💡 <strong>'이든X학원 평가 내용' 열</strong>에 "수학 / 방정식" 등 키워드 입력 시 자동 과목 분류<br>
-        💡 <strong>보기 열이 없으면</strong> 주관식으로 자동 처리
+  <div class="print-hdr" id="print-hdr">
+    <h1>이든X학원 평가지</h1>
+    <p id="print-meta"></p>
+  </div>
+
+  <main>
+    <!-- 관리자 패널 -->
+    <div id="admin-panel" style="display:none">
+      <h2>⚙️ 관리자 메뉴</h2>
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="switchTab('upload')">📁 문제 업로드</button>
+        <button class="tab-btn" onclick="switchTab('students')">👥 학생 목록</button>
       </div>
-    </div>
-  </section>
 
-  <!-- ② 퀴즈 섹션 -->
-  <section id="quiz-section">
+      <!-- 탭: 문제 업로드 -->
+      <div id="tab-upload">
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".csv,.txt,.xlsx,.xls">
+          <div class="drop-icon">📂</div>
+          <div class="drop-text">파일을 여기에 끌어다 놓거나 클릭하여 선택</div>
+          <div class="drop-hint">CSV · TXT · Excel(.xlsx) 지원</div>
+        </div>
+        <div class="file-name-display" id="file-name-display"></div>
+        <button class="btn-upload" id="btn-upload-go" onclick="doUpload()">✅ 이 파일로 문제 출제하기</button>
 
-    <!-- 점수 패널 (채점 후 표시) -->
-    <div id="score-panel">
-      <h2>🎯 채점 결과</h2>
-      <div class="score-big" id="score-pct">—</div>
-      <div class="score-sub" id="score-sub">총 0문제 중 0개 정답</div>
-      <div class="score-stats">
-        <div class="score-stat correct"><div class="num" id="s-correct">0</div><div class="lbl">정답</div></div>
-        <div class="score-stat wrong">  <div class="num" id="s-wrong">0</div><div class="lbl">오답</div></div>
-        <div class="score-stat">        <div class="num" id="s-total">0</div><div class="lbl">총 문항</div></div>
+        <div class="format-box">
+          <h4>📌 파일 열 구조 안내 (첫 행 = 헤더)</h4>
+          <table>
+            <tr><th>열 이름</th><th>내용</th><th>필수</th></tr>
+            <tr><td>문제</td><td>문제 본문</td><td>✅ 필수</td></tr>
+            <tr><td>보기1~보기5</td><td>객관식 선택지 (없으면 주관식)</td><td>객관식만</td></tr>
+            <tr><td>정답</td><td>객관식: 번호(1~5) / 주관식: 텍스트</td><td>✅ 필수</td></tr>
+            <tr><td>과목</td><td>국어/수학/영어 (없으면 자동분류)</td><td>선택</td></tr>
+            <tr><td>해설</td><td>채점 후 표시할 해설</td><td>선택</td></tr>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <!-- 메타 정보 -->
-    <div class="quiz-meta">
-      <div class="quiz-info">
-        <span class="subject-badge" id="subject-badge">—</span>
-        <div class="quiz-progress-wrap">
-          <div class="quiz-count" id="quiz-count">0 / 0 문항 완료</div>
-          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      <!-- 탭: 학생 목록 -->
+      <div id="tab-students" style="display:none">
+        <div id="student-list-wrap">
+          <div style="text-align:center;padding:24px;color:var(--gray-dk)">
+            <button class="btn-upload" style="display:inline-block;width:auto;padding:12px 28px;margin-top:0" onclick="loadStudentList()">🔄 구글 시트에서 학생 목록 불러오기</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 문제 목록 -->
-    <div id="questions-container"></div>
+    <!-- 퀴즈 섹션 -->
+    <div id="quiz-section">
+      <div id="score-panel">
+        <h2>🎯 채점 결과</h2>
+        <div class="score-big" id="score-pct">—</div>
+        <div class="score-sub" id="score-sub">총 0문제 중 0개 정답</div>
+        <div class="score-stats">
+          <div class="score-stat cr"><div class="n" id="s-ok">0</div><div class="l">정답</div></div>
+          <div class="score-stat wr"><div class="n" id="s-ng">0</div><div class="l">오답</div></div>
+          <div class="score-stat">  <div class="n" id="s-tt">0</div><div class="l">총문항</div></div>
+        </div>
+      </div>
 
-  </section>
-</main>
+      <div class="quiz-meta">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="subject-badge" id="subj-badge">—</span>
+          <div class="prog-wrap">
+            <div class="prog-count" id="prog-count">0 / 0</div>
+            <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
 
-<!-- 하단 액션 바 -->
+      <div id="q-container"></div>
+
+      <div class="empty-state" id="empty-state" style="display:none">
+        <div class="ei">📋</div>
+        <p>아직 출제된 문제가 없습니다.<br>관리자가 문제를 업로드하면 이곳에 표시됩니다.</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- 하단 액션바 -->
 <div id="action-bar">
-  <div class="action-bar-inner">
-    <button class="btn btn-orange btn-lg" id="btn-grade" onclick="gradeAll()">✅ 최종 정답 확인</button>
-    <button class="btn btn-outline btn-lg" id="btn-retry" onclick="retryAll()">🔄 다시 풀기</button>
-    <button class="btn btn-primary btn-lg" id="btn-wrong-only" onclick="retryWrongOnly()">❌ 틀린 문제만 다시 풀기</button>
+  <div class="ab-inner">
+    <button class="btn-act" id="btn-grade" onclick="gradeAll()">✅ 최종 정답 확인</button>
+    <button class="btn-act" id="btn-retry" onclick="retryAll()">🔄 다시 풀기</button>
+    <button class="btn-act" id="btn-wrong" onclick="retryWrong()">❌ 틀린 문제만</button>
   </div>
 </div>
 
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
 <script>
 /* ============================================================
-   STATE
+   상수
 ============================================================ */
-let questions   = [];       // 현재 세션 문제 배열
-let userAnswers = {};       // { idx: 사용자 답 }
-let graded      = false;
-let wrongIds    = [];       // 틀린 문제 인덱스 (원본 기준)
-let isWrongRetry = false;   // 오답만 재시도 모드
+const ADMIN_PW  = 'eden2026';
+const SHEET_ID  = '15MAA5x-TMiEZ_5A1nqUr7FSZJwCo_XDAViQVBSX3gY8';
+// CSV export URL (공개 게시 없이도 동작하는 export 방식)
+const SHEET_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
 
 /* ============================================================
-   SUBJECT CLASSIFIER
+   상태
 ============================================================ */
-function classifySubject(text) {
-  const t = (text || '').toLowerCase();
-  if (/국어|문학|독서|화법|작문|문법|고전|현대시|소설|수필|비문학/.test(t)) return '국어';
-  if (/수학|math|방정식|함수|미적분|확률|통계|기하|벡터|행렬|삼각|로그/.test(t)) return '수학';
-  if (/영어|english|grammar|reading|writing|listening|단어|어휘|구문|독해/.test(t)) return '영어';
-  return '기타';
+let currentUser  = null;   // { name, isAdmin }
+let questions    = [];
+let userAnswers  = {};
+let graded       = false;
+let wrongIds     = [];
+let pendingFile  = null;   // 업로드 대기 파일
+
+/* ============================================================
+   로그인
+============================================================ */
+document.getElementById('inp-pw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin() });
+document.getElementById('inp-name').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('inp-pw').focus() });
+
+function showAdminLogin() {
+  document.getElementById('inp-name').value = '관리자';
+  document.getElementById('inp-pw').focus();
+  showToast('관리자 비밀번호를 입력하세요');
+}
+
+async function doLogin() {
+  const name = document.getElementById('inp-name').value.trim();
+  const pw   = document.getElementById('inp-pw').value.trim();
+  const errEl = document.getElementById('login-error');
+  const ldEl  = document.getElementById('login-loading');
+  errEl.style.display = 'none';
+
+  if (!name || !pw) { errEl.textContent='이름과 비밀번호를 모두 입력하세요.'; errEl.style.display='block'; return; }
+
+  // 관리자 체크
+  if (pw === ADMIN_PW) {
+    enterApp({ name: name||'관리자', isAdmin: true });
+    return;
+  }
+
+  // 학생 체크 (구글 시트)
+  ldEl.style.display = 'block';
+  try {
+    const students = await fetchStudentSheet();
+    const matched = students.find(s =>
+      s.name && s.name.trim() === name &&
+      s.password && String(s.password).trim() === String(pw)
+    );
+    ldEl.style.display = 'none';
+    if (matched) {
+      enterApp({ name: matched.name, isAdmin: false });
+    } else {
+      errEl.textContent = '이름 또는 비밀번호가 올바르지 않습니다.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) {
+    ldEl.style.display = 'none';
+    // 시트 접근 실패 시 로컬 캐시로 시도
+    const cached = getCachedStudents();
+    if (cached.length > 0) {
+      const matched = cached.find(s => s.name.trim()===name && String(s.password).trim()===String(pw));
+      if (matched) { enterApp({ name: matched.name, isAdmin: false }); return; }
+    }
+    errEl.textContent = '학생 정보를 불러올 수 없습니다. 인터넷 연결을 확인하거나 관리자에게 문의하세요.';
+    errEl.style.display = 'block';
+  }
+}
+
+function enterApp(user) {
+  currentUser = user;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display   = 'block';
+  document.getElementById('hdr-uname').textContent = user.name;
+
+  if (user.isAdmin) {
+    document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('quiz-section').style.display = 'block';
+  } else {
+    document.getElementById('admin-panel').style.display = 'none';
+    document.getElementById('quiz-section').style.display = 'block';
+  }
+
+  // 저장된 문제 로드
+  loadSavedQuestions();
+}
+
+function doLogout() {
+  currentUser = null;
+  questions = []; userAnswers = {}; graded = false; wrongIds = [];
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-pw').value   = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('action-bar').style.display  = 'none';
+  document.getElementById('btn-print').style.display   = 'none';
 }
 
 /* ============================================================
-   FILE UPLOAD & PARSE
+   구글 시트 학생 목록 가져오기
 ============================================================ */
-const dropZone  = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+async function fetchStudentSheet() {
+  const res = await fetch(SHEET_CSV, { cache: 'no-store' });
+  if (!res.ok) throw new Error('fetch failed');
+  const text = await res.text();
+  const students = parseCSV(text);
+  // 캐시 저장
+  try { localStorage.setItem('eden_students_cache', JSON.stringify(students)); } catch(e){}
+  return students;
+}
 
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+function getCachedStudents() {
+  try { return JSON.parse(localStorage.getItem('eden_students_cache') || '[]'); } catch(e){ return []; }
+}
 
-function handleFile(file) {
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['csv','txt','xlsx','xls'].includes(ext)) { showToast('❌ 지원하지 않는 파일 형식입니다'); return; }
+async function loadStudentList() {
+  const wrap = document.getElementById('student-list-wrap');
+  wrap.innerHTML = '<div style="padding:16px;color:var(--gray-dk)"><span class="spinner"></span> 불러오는 중...</div>';
+  try {
+    const students = await fetchStudentSheet();
+    if (students.length === 0) {
+      wrap.innerHTML = '<div style="padding:16px;color:var(--gray-dk)">학생 데이터가 없습니다. 시트 첫 행에 <strong>이름, 비밀번호</strong> 헤더를 확인하세요.</div>';
+      return;
+    }
+    let html = `<div style="font-size:13px;color:var(--gray-dk);margin-bottom:8px">총 ${students.length}명 등록됨 &nbsp;·&nbsp; <a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" style="color:var(--sky)">시트 열기</a></div>`;
+    html += '<div class="student-list-area">';
+    students.forEach((s,i) => {
+      html += `<div class="student-row"><span class="student-name">${i+1}. ${esc(s.name)}</span><span class="badge-ok">등록됨</span></div>`;
+    });
+    html += '</div>';
+    html += `<div style="margin-top:12px"><button class="btn-upload" style="display:inline-block;width:auto;padding:11px 22px;margin-top:0" onclick="loadStudentList()">🔄 새로 고침</button></div>`;
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = `<div style="color:var(--red);padding:16px">⚠️ 구글 시트를 불러올 수 없습니다.<br><small>${e.message}</small><br><br><a href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit" target="_blank" style="color:var(--sky)">시트 직접 열기</a></div>`;
+  }
+}
 
+/* ============================================================
+   관리자 탭 전환
+============================================================ */
+function switchTab(t) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active', (i===0&&t==='upload')||(i===1&&t==='students')));
+  document.getElementById('tab-upload').style.display   = t==='upload'   ? '' : 'none';
+  document.getElementById('tab-students').style.display = t==='students' ? '' : 'none';
+}
+
+/* ============================================================
+   파일 업로드 — 드래그&드롭 + 클릭
+============================================================ */
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) setPendingFile(f);
+});
+fi.addEventListener('change', () => { if(fi.files[0]) setPendingFile(fi.files[0]); });
+
+function setPendingFile(f) {
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  if (!['csv','txt','xlsx','xls'].includes(ext)) {
+    showToast('❌ CSV, TXT, Excel 파일만 지원합니다', 'err'); return;
+  }
+  pendingFile = f;
+  const nd = document.getElementById('file-name-display');
+  nd.textContent = '📄 ' + f.name + '  (' + (f.size/1024).toFixed(1) + ' KB)';
+  nd.style.display = 'block';
+  document.getElementById('btn-upload-go').style.display = 'block';
+}
+
+function doUpload() {
+  if (!pendingFile) return;
+  const ext = (pendingFile.name.split('.').pop()||'').toLowerCase();
   const reader = new FileReader();
 
   if (ext === 'xlsx' || ext === 'xls') {
     reader.onload = e => {
-      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      buildQuestions(rows);
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+        processRows(rows);
+      } catch(err) { showToast('❌ 엑셀 파일 읽기 오류: ' + err.message, 'err'); }
     };
-    reader.readAsArrayBuffer(file);
+    reader.onerror = () => showToast('❌ 파일 읽기 실패', 'err');
+    reader.readAsArrayBuffer(pendingFile);
   } else {
+    // CSV / TXT — 인코딩 자동 감지
     reader.onload = e => {
-      const text = e.target.result;
-      const rows = parseCSVText(text);
-      buildQuestions(rows);
+      try {
+        let text = e.target.result;
+        // BOM 제거
+        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        const rows = parseCSV(text);
+        processRows(rows);
+      } catch(err) { showToast('❌ 파일 파싱 오류: ' + err.message, 'err'); }
     };
-    reader.readAsText(file, 'UTF-8');
+    reader.onerror = () => {
+      // UTF-8 실패 시 EUC-KR 재시도
+      const r2 = new FileReader();
+      r2.onload = e2 => {
+        let text = e2.target.result;
+        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        const rows = parseCSV(text);
+        processRows(rows);
+      };
+      r2.readAsText(pendingFile, 'EUC-KR');
+    };
+    // 먼저 UTF-8 시도
+    reader.readAsText(pendingFile, 'UTF-8');
   }
-}
-
-function parseCSVText(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,''));
-  return lines.slice(1).map(line => {
-    const vals = splitCSVLine(line);
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = (vals[i]||'').trim().replace(/^"|"$/g,''));
-    return obj;
-  });
-}
-
-function splitCSVLine(line) {
-  const result = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') { inQ = !inQ; }
-    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
-    else { cur += c; }
-  }
-  result.push(cur);
-  return result;
 }
 
 /* ============================================================
-   BUILD QUESTIONS FROM ROWS
+   CSV 파서 — RFC 4180 완전 지원 (쌍따옴표 이스케이프 처리)
 ============================================================ */
-function buildQuestions(rows) {
-  if (!rows || rows.length === 0) { showToast('⚠️ 데이터를 읽을 수 없습니다. 파일 형식을 확인하세요.'); return; }
+function parseCSV(text) {
+  // 줄 구분 정규화
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = splitCSVLines(text);
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = parseCSVLine(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h.trim()] = (vals[idx] !== undefined ? vals[idx] : '').trim();
+    });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+// 인용부호 내 줄바꿈을 보존하며 행 분리
+function splitCSVLines(text) {
+  const lines = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === '\n' && !inQ) { lines.push(cur); cur = ''; }
+    else cur += c;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+// 단일 CSV 행 파싱
+function parseCSVLine(line) {
+  const fields = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) { fields.push(cur); cur = ''; }
+    else cur += c;
+  }
+  fields.push(cur);
+  return fields;
+}
+
+/* ============================================================
+   행 → 문제 변환
+============================================================ */
+function classifySubject(t) {
+  t = (t||'').toLowerCase();
+  if (/국어|문학|독서|화법|작문|문법|고전|현대시|소설|수필/.test(t)) return '국어';
+  if (/수학|math|방정식|함수|미적분|확률|통계|기하|벡터|삼각|로그/.test(t)) return '수학';
+  if (/영어|english|grammar|reading|writing|listening|단어|어휘|구문|독해/.test(t)) return '영어';
+  return '기타';
+}
+
+function getField(row, ...keys) {
+  for (const k of keys) {
+    const found = Object.keys(row).find(rk =>
+      rk.replace(/\s/g,'').toLowerCase() === k.replace(/\s/g,'').toLowerCase()
+    );
+    if (found !== undefined && row[found] !== undefined && String(row[found]).trim() !== '') {
+      return String(row[found]).trim();
+    }
+  }
+  return '';
+}
+
+function processRows(rows) {
+  if (!rows || rows.length === 0) {
+    showToast('⚠️ 데이터가 없습니다. 파일 형식을 확인하세요.', 'err'); return;
+  }
 
   const qs = [];
   rows.forEach((row, idx) => {
-    // 열 이름 정규화 (대소문자·공백 무시)
-    const get = (...keys) => {
-      for (const k of keys) {
-        const found = Object.keys(row).find(rk => rk.replace(/\s/g,'').toLowerCase() === k.replace(/\s/g,'').toLowerCase());
-        if (found && row[found] !== undefined && row[found] !== '') return String(row[found]);
-      }
-      return '';
-    };
+    const qText = getField(row, '문제', 'question', '질문', '내용', 'Q');
+    if (!qText) return;
 
-    const questionText = get('문제','question','질문','내용');
-    if (!questionText) return;
+    let subject = getField(row, '과목', 'subject', '교과');
+    if (!subject) subject = classifySubject(
+      getField(row,'이든X학원평가내용','이든X학원 평가 내용','meta') + ' ' + qText
+    );
 
-    // 과목 결정
-    let subject = get('과목','subject','교과');
-    if (!subject) {
-      const metaText = get('이든X학원평가내용','이든X학원 평가 내용','메타','meta') + ' ' + questionText;
-      subject = classifySubject(metaText);
-    }
-
-    // 보기 추출
     const choices = [];
     for (let i = 1; i <= 5; i++) {
-      const c = get(`보기${i}`, `선택지${i}`, `choice${i}`, `option${i}`);
+      const c = getField(row, `보기${i}`, `선택지${i}`, `choice${i}`, `option${i}`, `보기 ${i}`);
       if (c) choices.push(c);
     }
 
-    // 유형 결정
-    let type = get('유형','type');
+    let type = getField(row, '유형', 'type');
     if (!type) type = choices.length > 0 ? '객관식' : '주관식';
 
-    const answer = get('정답','answer','ans');
-    const explanation = get('해설','explanation','풀이');
-    const num = get('번호','no','number') || String(idx + 1);
+    const answer      = getField(row, '정답', 'answer', 'ans', '답');
+    const explanation = getField(row, '해설', 'explanation', '풀이', '설명');
+    const num         = getField(row, '번호', 'no', 'number', 'num') || String(idx + 1);
 
-    qs.push({ id: idx, num, subject, type, question: questionText, choices, answer, explanation });
+    qs.push({ id: idx, num, subject, type, question: qText, choices, answer, explanation });
   });
 
-  if (qs.length === 0) { showToast('⚠️ 유효한 문제를 찾지 못했습니다. "문제" 열이 있는지 확인하세요.'); return; }
+  if (qs.length === 0) {
+    showToast('⚠️ "문제" 열을 찾을 수 없습니다. 헤더를 확인하세요.', 'err'); return;
+  }
 
-  questions   = qs;
-  userAnswers = {};
-  graded      = false;
-  wrongIds    = [];
-  isWrongRetry = false;
+  // 로컬스토리지에 저장 (학생도 볼 수 있도록)
+  try { localStorage.setItem('eden_questions', JSON.stringify(qs)); } catch(e){}
 
+  questions = qs; userAnswers = {}; graded = false; wrongIds = [];
   renderQuiz(questions);
-  showToast(`✅ ${qs.length}개 문제를 불러왔습니다`);
+  showToast(`✅ ${qs.length}개 문제가 출제되었습니다!`, 'ok');
+  pendingFile = null;
+  document.getElementById('file-name-display').style.display = 'none';
+  document.getElementById('btn-upload-go').style.display = 'none';
+  if(fi) fi.value = '';
+}
+
+function loadSavedQuestions() {
+  try {
+    const saved = localStorage.getItem('eden_questions');
+    if (saved) {
+      const qs = JSON.parse(saved);
+      if (qs && qs.length > 0) {
+        questions = qs;
+        renderQuiz(questions);
+        return;
+      }
+    }
+  } catch(e){}
+  // 문제 없음
+  document.getElementById('quiz-section').style.display = 'block';
+  document.getElementById('q-container').innerHTML = '';
+  document.getElementById('empty-state').style.display = 'block';
+  document.getElementById('action-bar').style.display = 'none';
 }
 
 /* ============================================================
-   RENDER QUIZ
+   퀴즈 렌더링
 ============================================================ */
 function renderQuiz(qs) {
-  document.getElementById('upload-section').style.display = 'none';
   document.getElementById('quiz-section').style.display = 'block';
-  document.getElementById('action-bar').style.display = 'block';
-  document.getElementById('btn-print').style.display = '';
-  document.getElementById('btn-new').style.display = '';
-  document.getElementById('score-panel').style.display = 'none';
-  document.getElementById('btn-grade').style.display = '';
-  document.getElementById('btn-retry').style.display = 'none';
-  document.getElementById('btn-wrong-only').style.display = 'none';
-
+  document.getElementById('score-panel').style.display  = 'none';
+  document.getElementById('empty-state').style.display  = 'none';
+  document.getElementById('btn-print').style.display    = '';
+  document.getElementById('action-bar').style.display   = 'block';
+  document.getElementById('btn-grade').style.display    = '';
+  document.getElementById('btn-retry').style.display    = 'none';
+  document.getElementById('btn-wrong').style.display    = 'none';
   graded = false;
 
-  // 과목 배지
-  const subjects = [...new Set(qs.map(q => q.subject))];
-  const badge = document.getElementById('subject-badge');
+  const subjects = [...new Set(qs.map(q=>q.subject))];
+  const badge = document.getElementById('subj-badge');
   badge.textContent = subjects.join(' · ');
-  badge.className = 'subject-badge ' + (subjects.length === 1 ? subjects[0] : '');
+  badge.className   = 'subject-badge ' + (subjects.length===1 ? subjects[0] : '');
 
-  // 인쇄 메타
   document.getElementById('print-meta').textContent =
     `과목: ${subjects.join('·')} | 총 문항: ${qs.length} | 날짜: ${new Date().toLocaleDateString('ko-KR')}`;
 
-  updateProgress(qs);
+  updateProg(qs);
 
-  const container = document.getElementById('questions-container');
-  container.innerHTML = '';
-
+  const c = document.getElementById('q-container');
+  c.innerHTML = '';
   qs.forEach((q, i) => {
     const card = document.createElement('div');
     card.className = `q-card ${q.subject}`;
-    card.id = `qcard-${q.id}`;
+    card.id = `qc-${q.id}`;
 
-    const isObjektiv = q.type === '객관식' && q.choices.length > 0;
+    const isObj = q.type==='객관식' && q.choices.length>0;
+    let body = '';
 
-    let choicesHTML = '';
-    if (isObjektiv) {
-      const twoCol = q.choices.length <= 4 ? 'two-col' : '';
-      choicesHTML = `<div class="choices ${twoCol}" id="choices-${q.id}">` +
-        q.choices.map((c, ci) =>
-          `<button class="choice-btn" data-qid="${q.id}" data-ci="${ci+1}" onclick="selectChoice(${q.id}, ${ci+1}, this)">
+    if (isObj) {
+      body = `<div class="choices" id="ch-${q.id}">` +
+        q.choices.map((ch, ci) =>
+          `<button class="choice-btn" data-qid="${q.id}" data-ci="${ci+1}"
+            onclick="pick(${q.id},${ci+1},this)">
             <span class="choice-num">${ci+1}</span>
-            <span>${escHtml(c)}</span>
+            <span>${esc(ch)}</span>
           </button>`
-        ).join('') +
-        `</div>`;
+        ).join('') + `</div>`;
     } else {
-      choicesHTML = `<input class="subjective-input" type="text" id="sub-${q.id}"
-        placeholder="정답을 입력하세요"
-        oninput="saveSubjective(${q.id}, this.value)"
-        autocomplete="off">
-        <div class="answer-box-print"></div>`;
+      body = `<input class="subj-input" id="si-${q.id}" type="text"
+        placeholder="정답을 입력하세요" autocomplete="off"
+        oninput="saveSubj(${q.id},this.value)">`;
     }
 
     card.innerHTML = `
       <div class="q-header">
-        <div class="q-number">${i+1}</div>
-        <div class="q-text">${escHtml(q.question).replace(/\n/g,'<br>')}</div>
+        <div class="q-num">${i+1}</div>
+        <div class="q-text">${esc(q.question).replace(/\n/g,'<br>')}</div>
       </div>
-      ${choicesHTML}
-      <div class="q-result" id="qresult-${q.id}">
-        <div class="result-label"></div>
-        <div class="explanation"></div>
+      ${body}
+      <div class="q-result" id="qr-${q.id}">
+        <div class="rl"></div><div class="ex"></div>
       </div>`;
-
-    container.appendChild(card);
+    c.appendChild(card);
   });
 }
 
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ============================================================
-   INTERACTION
+   인터랙션
 ============================================================ */
-function selectChoice(qid, ci, btn) {
+function pick(qid, ci, btn) {
   if (graded) return;
-  // 같은 문제의 다른 선택지 deselect
-  document.querySelectorAll(`[data-qid="${qid}"]`).forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll(`[data-qid="${qid}"]`).forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
   userAnswers[qid] = ci;
-  updateCard(qid);
-  updateProgress(questions);
+  markAnswered(qid);
+  updateProg(questions);
 }
-
-function saveSubjective(qid, val) {
+function saveSubj(qid, val) {
   userAnswers[qid] = val.trim();
-  updateProgress(questions);
+  markAnswered(qid);
+  updateProg(questions);
 }
-
-function updateCard(qid) {
-  const q = questions.find(q => q.id === qid);
-  if (!q) return;
-  const card = document.getElementById(`qcard-${q.id}`);
+function markAnswered(qid) {
+  const card = document.getElementById(`qc-${qid}`);
   if (!card) return;
-  const ans = userAnswers[qid];
-  card.classList.toggle('answered', ans !== undefined && ans !== '');
+  const a = userAnswers[qid];
+  card.classList.toggle('answered', a!==undefined && a!=='');
 }
-
-function updateProgress(qs) {
-  const answered = qs.filter(q => userAnswers[q.id] !== undefined && userAnswers[q.id] !== '').length;
-  document.getElementById('quiz-count').textContent = `${answered} / ${qs.length} 문항 완료`;
-  document.getElementById('progress-fill').style.width = `${Math.round(answered/qs.length*100)}%`;
+function updateProg(qs) {
+  const done = qs.filter(q=>userAnswers[q.id]!==undefined && userAnswers[q.id]!=='').length;
+  document.getElementById('prog-count').textContent = `${done} / ${qs.length} 완료`;
+  document.getElementById('prog-fill').style.width  = `${Math.round(done/qs.length*100)}%`;
 }
 
 /* ============================================================
-   GRADE
+   채점
 ============================================================ */
 function gradeAll() {
-  const unanswered = questions.filter(q => userAnswers[q.id] === undefined || userAnswers[q.id] === '');
-  if (unanswered.length > 0) {
-    const first = unanswered[0];
-    const el = document.getElementById(`qcard-${first.id}`);
-    el && el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast(`⚠️ ${unanswered.length}개 문제의 답을 입력하지 않았습니다`);
-    return;
+  const un = questions.filter(q => userAnswers[q.id]===undefined || userAnswers[q.id]==='');
+  if (un.length) {
+    const el = document.getElementById(`qc-${un[0].id}`);
+    el && el.scrollIntoView({behavior:'smooth',block:'center'});
+    showToast(`⚠️ ${un.length}개 문항에 답을 입력하지 않았습니다`, 'err'); return;
   }
-
-  graded = true;
-  wrongIds = [];
-  let correct = 0;
-
+  graded = true; wrongIds = []; let ok = 0;
   questions.forEach(q => {
-    const userAns = String(userAnswers[q.id] || '').trim();
-    const correctAns = String(q.answer || '').trim();
-    const isCorrect = userAns.toLowerCase() === correctAns.toLowerCase();
-
-    const card = document.getElementById(`qcard-${q.id}`);
-    const result = document.getElementById(`qresult-${q.id}`);
-    const label = result.querySelector('.result-label');
-    const expl = result.querySelector('.explanation');
-
+    const ua  = String(userAnswers[q.id]||'').trim().toLowerCase();
+    const ca  = String(q.answer||'').trim().toLowerCase();
+    const isOk = ua === ca;
+    const card = document.getElementById(`qc-${q.id}`);
+    const res  = document.getElementById(`qr-${q.id}`);
     card.classList.remove('answered');
-    if (isCorrect) {
-      correct++;
-      card.classList.add('correct');
-      label.textContent = '✅ 정답';
-      result.className = 'q-result show correct-result';
+    if (isOk) {
+      ok++; card.classList.add('correct');
+      res.className='q-result show cr';
+      res.querySelector('.rl').textContent = '✅ 정답';
     } else {
       wrongIds.push(q.id);
       card.classList.add('incorrect');
-      label.textContent = `❌ 오답  (정답: ${correctAns})`;
-      result.className = 'q-result show wrong-result';
+      res.className='q-result show wr';
+      res.querySelector('.rl').textContent = `❌ 오답  (정답: ${q.answer})`;
     }
-    if (q.explanation) expl.textContent = '📝 해설: ' + q.explanation;
-
-    // 객관식 시각화
-    if (q.type === '객관식' && q.choices.length > 0) {
-      document.querySelectorAll(`[data-qid="${q.id}"]`).forEach(btn => {
-        btn.disabled = true;
-        const ci = parseInt(btn.dataset.ci);
-        if (ci === parseInt(correctAns)) btn.classList.add('correct-ans');
-        else if (ci === parseInt(userAns) && !isCorrect) btn.classList.add('wrong-ans');
-        else btn.classList.remove('selected');
+    if (q.explanation) res.querySelector('.ex').textContent = '📝 ' + q.explanation;
+    if (q.type==='객관식' && q.choices.length) {
+      document.querySelectorAll(`[data-qid="${q.id}"]`).forEach(b=>{
+        b.disabled=true;
+        const ci = parseInt(b.dataset.ci);
+        if (ci===parseInt(q.answer)) b.classList.add('correct-ans');
+        else if (ci===parseInt(userAnswers[q.id]) && !isOk) b.classList.add('wrong-ans');
+        else b.classList.remove('selected');
       });
     }
   });
-
-  // 점수 패널
   const total = questions.length;
-  const pct   = Math.round(correct / total * 100);
-  document.getElementById('score-pct').textContent  = pct + '점';
-  document.getElementById('score-sub').textContent  = `총 ${total}문제 중 ${correct}개 정답`;
-  document.getElementById('s-correct').textContent  = correct;
-  document.getElementById('s-wrong').textContent    = total - correct;
-  document.getElementById('s-total').textContent    = total;
+  const pct   = Math.round(ok/total*100);
+  document.getElementById('score-pct').textContent = pct+'점';
+  document.getElementById('score-sub').textContent = `총 ${total}문제 중 ${ok}개 정답`;
+  document.getElementById('s-ok').textContent = ok;
+  document.getElementById('s-ng').textContent = total-ok;
+  document.getElementById('s-tt').textContent = total;
   document.getElementById('score-panel').style.display = 'block';
-  document.getElementById('score-panel').scrollIntoView({ behavior: 'smooth' });
-
-  // 버튼 전환
+  document.getElementById('score-panel').scrollIntoView({behavior:'smooth'});
   document.getElementById('btn-grade').style.display = 'none';
   document.getElementById('btn-retry').style.display = '';
-  document.getElementById('btn-wrong-only').style.display = wrongIds.length > 0 ? '' : 'none';
-
-  // 로컬 스토리지 기록
-  saveRecord({ date: new Date().toISOString(), total, correct, pct, wrongCount: wrongIds.length });
-}
-
-function saveRecord(record) {
+  document.getElementById('btn-wrong').style.display = wrongIds.length ? '' : 'none';
   try {
-    const key = 'eden_quiz_records';
-    const prev = JSON.parse(localStorage.getItem(key) || '[]');
-    prev.unshift(record);
-    localStorage.setItem(key, JSON.stringify(prev.slice(0, 50)));
-  } catch(e) {}
+    const rec = {date:new Date().toISOString(),total,ok,pct,user:currentUser?.name};
+    const prev = JSON.parse(localStorage.getItem('eden_records')||'[]');
+    prev.unshift(rec);
+    localStorage.setItem('eden_records', JSON.stringify(prev.slice(0,50)));
+  } catch(e){}
 }
 
-/* ============================================================
-   RETRY
-============================================================ */
 function retryAll() {
-  userAnswers = {};
-  graded = false;
+  userAnswers={}; graded=false;
   renderQuiz(questions);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({top:0,behavior:'smooth'});
 }
-
-function retryWrongOnly() {
-  if (wrongIds.length === 0) { showToast('틀린 문제가 없습니다 🎉'); return; }
-  const wrongQs = questions.filter(q => wrongIds.includes(q.id));
-  userAnswers = {};
-  graded = false;
-  isWrongRetry = true;
-  renderQuiz(wrongQs);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  showToast(`❌ 틀린 ${wrongQs.length}개 문제로 다시 시작합니다`);
-}
-
-function resetAll() {
-  questions   = [];
-  userAnswers = {};
-  graded      = false;
-  wrongIds    = [];
-  document.getElementById('upload-section').style.display = 'block';
-  document.getElementById('quiz-section').style.display = 'none';
-  document.getElementById('action-bar').style.display = 'none';
-  document.getElementById('btn-print').style.display = 'none';
-  document.getElementById('btn-new').style.display = 'none';
-  document.getElementById('questions-container').innerHTML = '';
-  fileInput.value = '';
+function retryWrong() {
+  if (!wrongIds.length) { showToast('틀린 문제가 없습니다 🎉','ok'); return; }
+  const wqs = questions.filter(q=>wrongIds.includes(q.id));
+  userAnswers={}; graded=false;
+  renderQuiz(wqs);
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast(`❌ 틀린 ${wqs.length}개 문제로 다시 시작합니다`);
 }
 
 /* ============================================================
-   TOAST
+   토스트
 ============================================================ */
-function showToast(msg) {
+let _toastTimer;
+function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+  t.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
 }
+
+/* ── 엔터키로 로그인 ── */
+window.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('login-screen').style.display!=='none') doLogin();
+});
 </script>
 </body>
 </html>
