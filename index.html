@@ -1,0 +1,100 @@
+
+<title>이든X학원 평가 시스템</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+:root {
+  --pri: #1E3580;
+  --pri-l: #2D4FBF;
+  --acc: #E8361A;
+  --acc-l: #FF4F32;
+  --kor: #B91C1C;
+  --math: #1D4ED8;
+  --eng: #065F46;
+  --ok: #15803D;
+  --ok-bg: #DCFCE7;
+  --ng: #B91C1C;
+  --ng-bg: #FEE2E2;
+  --bg: #EDF2FF;
+  --bg2: #F8FAFF;
+  --card: #FFFFFF;
+  --text: #0F172A;
+  --text2: #374151;
+  --muted: #6B7280;
+  --border: #D1D5DB;
+  --shadow: 0 2px 8px rgba(30,53,128,.08);
+  --shadow-lg: 0 8px 24px rgba(30,53,128,.14);
+  --r: 14px;
+  --r-sm: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0D1225;
+    --bg2: #111827;
+    --card: #1A2445;
+    --text: #F1F5F9;
+    --text2: #CBD5E1;
+    --muted: #94A3B8;
+    --border: #2D3A5E;
+    --shadow: 0 2px 8px rgba(0,0,0,.3);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="light"] {
+  --bg: #EDF2FF; --bg2: #F8FAFF; --card: #FFFFFF;
+  --text: #0F172A; --text2: #374151; --muted: #6B7280;
+  --border: #D1D5DB;
+  --shadow: 0 2px 8px rgba(30,53,128,.08);
+  --shadow-lg: 0 8px 24px rgba(30,53,128,.14);
+}
+:root[data-theme="dark"] {
+  --bg: #0D1225; --bg2: #111827; --card: #1A2445;
+  --text: #F1F5F9; --text2: #CBD5E1; --muted: #94A3B8;
+  --border: #2D3A5E;
+  --shadow: 0 2px 8px rgba(0,0,0,.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── HEADER ── */
+.app-header {
+  background: var(--pri);
+  color: #fff;
+  padding: 0 20px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  box-shadow: 0 2px 16px rgba(30,53,128,.4);
+}
+.school-name {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  line-height: 1;
+}
+.school-x { color: var(--acc); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.badge-kor { background: var(--kor); color: #fff; }
